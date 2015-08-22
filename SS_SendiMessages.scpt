@@ -43,7 +43,8 @@ on run arg
 	
 	set theFile to "/tmp/securityspy_imessage_file_" & camName & ".jpg"
 	tell application "SecuritySpy" to capture image as theFile camera name camName with overwrite
-	
+	-- This delay will help prevent duplicate images.
+	delay 0.5
 	set theFile to (POSIX file theFile)
 	tell application "Messages"
 		repeat with Subscriber in Subscribers

@@ -7,6 +7,10 @@ I've created two scripts that allow you to interact with and control part of Sec
 ### Features
 What can you do with this? You can tell SecuritySpy to send you pictures from your cameras when they detect motion. You can tell SecuritySpy to send you pictures of any camera immediately (regardless of active/passive or motion detection settings). These are the main two features of the package. It also provides some other commands so you can control access. I recommend you use this with a dedicated SecuritySpy machine ("server"). I made a new Apple ID account specifically for iMessages on this server, and setup Messages.app with this account. No one knows the account, so it's fairly secure just considering that. Do not give people the account nor tell them the commands and your privacy will be pretty safe.
 
+#### Screen shots
+http://cl.ly/image/123A4136352s
+http://cl.ly/image/100p3s1z1J0N
+
 ### Installation
 Installation is simple, but requires a few steps. First, make sure you are signed into an iMessage account with Messages and SecuritySpy is running with at least 1 camera.
 

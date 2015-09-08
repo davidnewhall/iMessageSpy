@@ -20,7 +20,11 @@
 on run arg
 	set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.SSHelper.plist"
 	if not (exists file plistFilePath of application "Finder") then
-		return
+		-- Once Messages.app gets sanboxed, this is the new location of the plist file we create. Luckily, SecuritySpy is not sandboxed yet.
+		set plistFilePath to (path to home folder as text) & "Library:Containers:com.apple.iChat:Data:Library:Preferences:com.cartcrafter.SSHelper.plist"
+		if not (exists file plistFilePath of application "Finder") then
+			return
+		end if
 	end if
 	set camName to item 2 of arg
 	set Subscribers to {}
@@ -55,3 +59,4 @@ on run arg
 		close windows
 	end tell
 end run
+

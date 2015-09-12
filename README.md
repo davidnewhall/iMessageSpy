@@ -31,12 +31,12 @@ That's it, it's all loaded. Now, from another computer or your phone send an iMe
 ### Bugs
 Things I've noticied and not yet had time to fix...
 
-* ~~`sub *` doesn't always work, especially if it's the first time you are subscribing. I recommend using `sub SomeCamName` before doing `sub *`, that seems more reliable.~~ sub command fixed
-* ~~If you send something to the script that is not text, it will crash. This includes pictures and audio.~~ fixed
+* ~~`sub *` doesn't always work, especially if it's the first time you are subscribing. I recommend using `sub SomeCamName` before doing `sub *`, that seems more reliable.~~ sub command fixed 9/12/15
+* ~~If you send something to the script that is not text, it will crash. This includes pictures and audio.~~ fixed 9/12/15
 * Sometimes the script runs too slowly and "crashes." This will require you to force quit Messages.app and re-open it. Adding delays helps, but it's still not 100%.
-* ~~If you send `pics` and one of your cameras is disconnected/offline, it may crash trying to get a picture from that camera.~~ should be fixed
+* ~~If you send `pics` and one of your cameras is disconnected/offline, it may crash trying to get a picture from that camera.~~ should be fixed as of 9/12/15
 * Sometimes the very first command produces an error if there is no plist file. Subscribing to something at least once fixes it permanently.
-* ~~Capitalization is screwed up. I need to add a function to normalize/fix user input.~~ fixed
+* ~~Capitalization is screwed up. I need to add a function to normalize/fix user input.~~ fixed 9/12/15
 * Not really a bug, but things seem to work better if you add yourself and any other users to Contacts.app.
 
 Feel free to send along PRs...

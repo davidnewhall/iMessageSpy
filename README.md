@@ -39,4 +39,5 @@ Things I've noticied and not yet had time to fix...
 * ~~Capitalization is screwed up. I need to add a function to normalize/fix user input.~~ fixed 9/12/15
 * Not really a bug, but things seem to work better if you add yourself and any other users to Contacts.app.
 
-Feel free to send along PRs...
+Feel free to send along PRs. If you have something to ask/suggest, I usually check this forum thread:
+http://www.bensoftware.com/forum/discussion/949/securityspy-messages-app-and-imessage-integration

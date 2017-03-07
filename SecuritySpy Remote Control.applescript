@@ -682,8 +682,7 @@ using terms from application "Messages"
 			set theResponse to theResponse & "pics [camera] - Sends pictures from all cameras, or from [camera]." & return
 			set theResponse to theResponse & "sub <camera|*> - Enables motion notifications from <camera>" & return
 			set theResponse to theResponse & "unsub <camera|*> - Stops motion notifications from <camera>" & return
-			set theResponse to theResponse & "stop [minutes] - Stops all motion notifications for 10 minutes or [minutes]" & return
-			
+			set theResponse to theResponse & "stop [minutes] [camera]- Stops all motion notifications for 10 minutes or [minutes] on all cameras or [camera]" & return
 			if thisHandleIsAdmin is true then
 				set theResponse to theResponse & return & "Available Admin Commands:" & return
 				set theResponse to theResponse & "subs - Shows all subscribers' information." & return
@@ -698,6 +697,19 @@ using terms from application "Messages"
 				set theResponse to theResponse & "reset <really> - Delete the plist files to reset this system." & return
 				-- This probably only works on a MacBooks.
 				set theResponse to theResponse & "screen <on|off> - Sets host's screen brightness. May or may not not work for you." & return
+			end if
+		else
+			-- Check for dynamic plugin. This allows you to extend the command set here.
+			tell application "Finder" to set myPath to container of (path to me) as text
+			set pluginPath to myPath & "SecuritySpy_Plugins:" & theCommand & ".scpt"
+			if (exists file pluginPath of application "System Events") then
+				if thisHandleIsAdmin then set theResponse to "Found plugin at " & pluginPath
+				try
+					set DynoPlugin to load script file (pluginPath)
+					set theResponse to DynoPlugin's MainRoutine(theHandle, theArgument, thisHandleIsAdmin)
+				on error
+					if thisHandleIsAdmin then set theResponse to "Error with plugin: " & pluginPath
+				end try
 			end if
 		end if
 		

@@ -46,14 +46,14 @@ using terms from application "Messages"
 		end if
 		return theResponse
 	end getPicsFromSS
-
+	
 	on CorrectCase(this_item, this_list)
 		repeat with i from 1 to the count of this_list
 			if item i of this_list is this_item then return item i of this_list
 		end repeat
 		return this_item
 	end CorrectCase
-
+	
 	-- brightness should be between 0 and 1.
 	on DisplayBrightness(brightness)
 		tell application "System Preferences"
@@ -162,7 +162,7 @@ using terms from application "Messages"
 		end tell
 		return theResponse
 	end SubscribeCam
-
+	
 	on MakeCamList(allCams)
 		set camList to {}
 		set startTime to (current date)
@@ -176,7 +176,7 @@ using terms from application "Messages"
 		set the end of startList to {camName:camName, startat:startTime}
 		return startList
 	end AddCamList
-
+	
 	on unSubscribeCam(subCam, subHandle)
 		global plistFilePath
 		if not (exists file plistFilePath of application "System Events") then
@@ -682,7 +682,7 @@ using terms from application "Messages"
 			set theResponse to theResponse & "pics [camera] - Sends pictures from all cameras, or from [camera]." & return
 			set theResponse to theResponse & "sub <camera|*> - Enables motion notifications from <camera>" & return
 			set theResponse to theResponse & "unsub <camera|*> - Stops motion notifications from <camera>" & return
-			set theResponse to theResponse & "stop [minutes] [camera]- Stops all motion notifications for 10 minutes or [minutes] on all cameras or [camera]" & return
+			set theResponse to theResponse & "stop [minutes] [camera] - Stops all motion notifications for 10 minutes or [minutes] on all cameras or [camera]" & return
 			if thisHandleIsAdmin is true then
 				set theResponse to theResponse & return & "Available Admin Commands:" & return
 				set theResponse to theResponse & "subs - Shows all subscribers' information." & return

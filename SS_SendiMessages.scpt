@@ -17,6 +17,9 @@
 ** https://github.com/davidnewhall/iMessageSpy
 *************************************************** *)
 
+-- You can use something like the below to test this in Script Editor
+-- set arg to {0, "Porch"}
+
 on run arg
 	-- This delay will help prevent duplicate images. If you tend to get duplicate images, increase the delay. 0.7 should be your max.
 	set imageDelay to 0.1
@@ -45,10 +48,12 @@ on run arg
 					-- This pulls an array (of subscriber data) out of the larger array.
 					set loopSub to (item i of allSubs)
 					-- Do they subscribe to this camera? Are they ignored? Is there a stop timer in place? yes, no, no, go
-					if (camName is in cameras of loopSub) and (ignored of loopSub is false) and (startat of loopSub < (current date)) then
-						-- The handle is the actual iMessage name. A phone number or email address in most cases.
-						set Subscribers to Subscribers & {handle of loopSub}
-					end if
+					repeat with loopCam in cameras of loopSub
+						if (camName is camName of loopCam) and (ignored of loopSub is false) and (startat of loopCam < (current date)) then
+							-- The handle is the actual iMessage name. A phone number or email address in most cases.
+							set Subscribers to Subscribers & {handle of loopSub}
+						end if
+					end repeat
 				end repeat
 			end tell
 		end tell
@@ -61,9 +66,9 @@ on run arg
 	delay imageDelay
 	-- This changes the variable into something iMessage can use.
 	set theFile to (POSIX file theFile)
-	tell application "Messages"
-		-- This is the Subscribers array we built previously.
-		repeat with Subscriber in Subscribers
+	-- This is the Subscribers array we built previously.
+	repeat with Subscriber in Subscribers
+		tell application "Messages"
 			-- Best trick to send an iMessage that I've come across. Seems to work every time. More tips are welcomed.
 			set targetBuddy to buddy Subscriber of (1st service whose service type = iMessage)
 			if sendCameraName is true then
@@ -71,8 +76,7 @@ on run arg
 				delay 0.1
 			end if
 			send theFile to targetBuddy
-		end repeat
-		close windows
-	end tell
+		end tell
+	end repeat
+	tell application "Messages" to close windows
 end run
-

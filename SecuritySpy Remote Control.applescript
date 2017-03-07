@@ -104,18 +104,26 @@ using terms from application "Messages"
 								-- We found the handle we're after, now compare this new camera to what they currently have.
 								set subExists to true
 								if subCam is "*" then
-									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:subName, startat:current date, cameras:allCams}
+									set allCams to my MakeCamList(allCams)
+									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:subName, cameras:allCams}
 									set theResponse to "You are now subscribed to all " & (count allCams) & " camera(s)."
-								else if subCam is in cameras of loopSub then
-									set theResponse to "You are already subscribed to this camera."
-									-- Don't do anything, just append the data and save it without changes.
-									set newSubList's end to allSubs's item i
 								else
-									set subCam to {my CorrectCase(subCam, allCams)}
-									-- Add new camera to previous subscriber.
-									set newCams to (cameras of loopSub & subCam)
-									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:subName, startat:current date, cameras:newCams}
-									set theResponse to "You are now subscribed to " & (count newCams) & " cameras."
+									set gotIt to false
+									repeat with loopCam in cameras of loopSub
+										if subCam as string is equal to camName of loopCam as string then
+											set theResponse to "You are already subscribed to this camera."
+											set gotIt to true
+											-- Don't do anything, just append the data and save it without changes.
+											set newSubList's end to allSubs's item i
+										end if
+									end repeat
+									if gotIt is false then
+										set subCam to my CorrectCase(subCam, allCams)
+										-- Add new camera to previous subscriber.
+										set newCams to my AddCamList(cameras of loopSub, subCam)
+										set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:subName, cameras:newCams}
+										set theResponse to "You are now subscribed to " & (count newCams) & " cameras."
+									end if
 								end if
 							else
 								-- Just keep the record, not the handle we're after.
@@ -126,13 +134,13 @@ using terms from application "Messages"
 						if subExists is false then
 							-- New subscriber, but not the first, so no admin flag.
 							if subCam is "*" then
-								set subCam to allCams
 								set partialResponse to "all " & (count allCams) & " cameras."
 							else
 								set partialResponse to "your first camera."
-								set subCam to {my CorrectCase(subCam, allCams)}
+								set subCam to my CorrectCase(subCam, allCams)
 							end if
-							set newSubList's end to {handle:subHandle, admin:false, ignored:false, contact:subName, startat:current date, cameras:subCam}
+							set subCam to my MakeCamList(subCam)
+							set newSubList's end to {handle:subHandle, admin:false, ignored:false, contact:subName, cameras:subCam}
 							set theResponse to "You have been successfully subscribed to " & partialResponse
 						end if
 						-- This is where the plist file is re-written with this new subscription appended.
@@ -142,10 +150,11 @@ using terms from application "Messages"
 						if subCam is "*" then
 							set subCam to allCams
 						else
-							set subCam to {my CorrectCase(subCam, allCams)}
+							set subCam to my CorrectCase(subCam, allCams)
 						end if
+						set subCam to my MakeCamList(subCam)
 						-- This is what actually re-writes the plist file for the first time and creates real data.
-						set value of property list item "Subscribers" to (previousValue & {{handle:subHandle, admin:true, ignored:false, contact:subName, startat:current date, cameras:subCam}})
+						set value of property list item "Subscribers" to (previousValue & {{handle:subHandle, admin:true, ignored:false, contact:subName, cameras:subCam}})
 						set theResponse to "You have subscribed to your first camera, and since you are the first subscriber you have been given admin powers. Send \"help\" for your commands."
 					end if
 				end tell
@@ -153,7 +162,21 @@ using terms from application "Messages"
 		end tell
 		return theResponse
 	end SubscribeCam
-	
+
+	on MakeCamList(allCams)
+		set camList to {}
+		set startTime to (current date)
+		repeat with loopCam in allCams
+			set the end of camList to {camName:loopCam, startat:startTime}
+		end repeat
+		return camList
+	end MakeCamList
+	on AddCamList(startList, camName)
+		set startTime to current date
+		set the end of startList to {camName:camName, startat:startTime}
+		return startList
+	end AddCamList
+
 	on unSubscribeCam(subCam, subHandle)
 		global plistFilePath
 		if not (exists file plistFilePath of application "System Events") then
@@ -173,24 +196,27 @@ using terms from application "Messages"
 							if handle of loopSub is subHandle then
 								set subExists to true
 								if subCam is "*" then
-									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, startat:current date, cameras:{}}
+									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, cameras:{}}
 									set theResponse to "You have been successfully ubsubscribed from all cameras"
-								else if subCam is in cameras of loopSub then
-									set newCams to {}
-									repeat with loopCam in (cameras of loopSub)
-										if subCam as string is not equal to loopCam as string then
-											set the end of newCams to loopCam
-										else
-											set subCam to loopCam -- fixes case for reply message.
-										end if
-									end repeat
-									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, startat:current date, cameras:newCams}
-									set theResponse to "You have been successfully ubsubscribed from " & subCam & return & "You are now subscribed to " & (count newCams) & " cameras."
 								else if (count cameras of loopSub) is 0 then
 									return "You are not subscribed to any cameras."
 								else
-									-- we don't do anything, no updates, nothing. bail out.
-									return "You are not subscribed to " & subCam
+									set gotIt to false
+									set newCams to {}
+									repeat with loopCam in cameras of loopSub
+										if camName of loopCam as string is not equal to subCam as string then
+											set the end of newCams to loopCam
+										else
+											set gotIt to true
+											set subCam to camName of loopCam
+										end if
+									end repeat
+									if gotIt is false then
+										-- we don't do anything, no updates, nothing. bail out.
+										return "You are not subscribed to " & subCam
+									end if
+									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, cameras:newCams}
+									set theResponse to "You have been successfully ubsubscribed from " & subCam & return & "You are now subscribed to " & (count newCams) & " cameras."
 								end if
 							else
 								-- just keep the record, not the handle we're after.
@@ -225,10 +251,10 @@ using terms from application "Messages"
 							set loopSub to (item i of allSubs)
 							if handle of loopSub is subHandle then
 								if ignored of loopSub is true then
-									set newSubList's end to {handle:subHandle, admin:false, ignored:false, contact:contact of loopSub, startat:current date, cameras:{}}
+									set newSubList's end to {handle:subHandle, admin:false, ignored:false, contact:contact of loopSub, cameras:{}}
 									set theResponse to subHandle & " is no longer being ignored."
 								else
-									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:true, contact:contact of loopSub, startat:current date, cameras:{}}
+									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:true, contact:contact of loopSub, cameras:{}}
 									set theResponse to subHandle & " is now being ignored."
 								end if
 							else
@@ -256,10 +282,10 @@ using terms from application "Messages"
 							set loopSub to (item i of allSubs)
 							if handle of loopSub is subHandle then
 								if admin of loopSub is true then
-									set newSubList's end to {handle:subHandle, admin:false, ignored:ignored of loopSub, contact:contact of loopSub, startat:startat of loopSub, cameras:cameras of loopSub}
+									set newSubList's end to {handle:subHandle, admin:false, ignored:ignored of loopSub, contact:contact of loopSub, cameras:cameras of loopSub}
 									set theResponse to subHandle & " is no longer an admin."
 								else
-									set newSubList's end to {handle:subHandle, admin:true, ignored:false, contact:contact of loopSub, startat:startat of loopSub, cameras:cameras of loopSub}
+									set newSubList's end to {handle:subHandle, admin:true, ignored:false, contact:contact of loopSub, cameras:cameras of loopSub}
 									set theResponse to subHandle & " is now an admin."
 								end if
 							else
@@ -274,7 +300,7 @@ using terms from application "Messages"
 		return theResponse
 	end changeAdminStatus
 	
-	on stopNotices(Mins, subHandle)
+	on stopNotices(Mins, camName, subHandle)
 		global plistFilePath
 		set startTime to (current date) + (Mins * minutes)
 		if not (exists file plistFilePath of application "System Events") then
@@ -296,8 +322,26 @@ using terms from application "Messages"
 								if (count cameras of loopSub) is 0 then
 									return "You are not subscribed to any cameras. You should not be receiving notices."
 								else
-									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, startat:startTime, cameras:cameras of loopSub}
-									set theResponse to "You will not receive any more notices for at least " & Mins & " minutes."
+									set newCamList to {}
+									set gotIt to false
+									repeat with loopCam in cameras of loopSub
+										if camName is "*" or camName in loopCam is camName then
+											set gotIt to true
+											set the end of newCamList to {camName:camName in loopCam, startat:startTime}
+											if camName is not "*" then set camName to my CorrectCase(camName, {camName in loopCam})
+										else
+											-- Leave it untouched.
+											set the end of newCamList to loopCam
+										end if
+									end repeat
+									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, cameras:newCamList}
+									if gotIt is false then
+										set theResponse to "You are not subscribed to the camera " & camName
+									else if camName is "*" then
+										set theResponse to "You will not receive any more notices (from any camera) for at least " & Mins & " minutes."
+									else
+										set theResponse to "You will not receive any more notices from camera " & camName & " for at least " & Mins & " minutes."
+									end if
 								end if
 							else
 								-- just keep the record, not the user we're after.
@@ -306,11 +350,11 @@ using terms from application "Messages"
 						end repeat
 						if subExists is false then
 							-- new subscriber, but not the first, so no admin flag.
-							return "You have never subscribed to any cameras. You should not be receiving notices."
+							set theResponse to "You have never subscribed to any cameras. You should not be receiving notices."
 						end if
 						set value of property list item "Subscribers" to newSubList
 					else
-						return "You have never subscribed to any cameras. You should not be receiving notices."
+						set theResponse to "You have never subscribed to any cameras. You should not be receiving notices."
 					end if
 				end tell
 			end tell
@@ -351,7 +395,7 @@ using terms from application "Messages"
 					repeat with i from 1 to count allSubs
 						set loopSub to (item i of allSubs)
 						if returnFullRecord is true then
-							set the end of Subscribers to {handle of loopSub, contact of loopSub, ignored of loopSub, admin of loopSub, startat of loopSub, cameras of loopSub}
+							set the end of Subscribers to {handle of loopSub, contact of loopSub, ignored of loopSub, admin of loopSub, cameras of loopSub}
 						else
 							set the end of Subscribers to (handle of loopSub)
 						end if
@@ -540,8 +584,7 @@ using terms from application "Messages"
 				set loopContact to item 2 of loopSub
 				set loopIgnored to item 3 of loopSub
 				set loopAdmin to item 4 of loopSub
-				set loopStartat to item 5 of loopSub
-				set loopCams to item 6 of loopSub
+				set loopCams to item 5 of loopSub
 				if loopHandle is theHandle or thisHandleIsAdmin is true then
 					set theResponse to theResponse & i & ": " & loopHandle & " (" & loopContact & ") "
 					if loopIgnored is true then
@@ -561,7 +604,7 @@ using terms from application "Messages"
 							set i to 0
 							repeat with loopCam in loopCams
 								set i to i + 1
-								set theResponse to theResponse & loopCam
+								set theResponse to theResponse & camName in loopCam
 								if i is not (count loopCams) then set theResponse to theResponse & ", "
 							end repeat
 						end if
@@ -573,14 +616,21 @@ using terms from application "Messages"
 		else if theCommand is "stop" then
 			-- temporarily stop all motion activated notices to this handle.
 			if theArgument is "" then
-				set theResponse to stopNotices(10, theHandle)
+				set theResponse to stopNotices(10, "*", theHandle)
 			else
+				set astid to AppleScript's text item delimiters
+				set AppleScript's text item delimiters to {" "}
 				try
-					-- Use try in case we get something that is not a number.
-					set theArgument to theArgument as number
-					set theResponse to stopNotices(theArgument, theHandle)
+					set theCamera to (text items 2 thru -1 of theArgument as string)
 				on error
-					set theResponse to "Usage: stop [minutes]"
+					set theCamera to "*"
+				end try
+				try
+					set theCount to (the first text item of theArgument as string) as number
+					set AppleScript's text item delimiters to astid
+					set theResponse to stopNotices(theCount, theCamera, theHandle)
+				on error
+					set theResponse to "Usage: stop [minutes] [camera]"
 				end try
 			end if
 			

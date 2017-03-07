@@ -688,7 +688,7 @@ using terms from application "Messages"
 					end try
 				end repeat
 			end if
-		else
+		else if theCommand does not contain ":" then -- Best security we got, right here.
 			-- Check for dynamic plugin. This allows you to extend the command set here.
 			tell application "Finder" to set myPath to container of (path to me) as text
 			set pluginPath to myPath & "SecuritySpy_Plugins:" & theCommand & ".scpt"

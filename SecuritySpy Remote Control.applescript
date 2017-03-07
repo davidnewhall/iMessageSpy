@@ -29,7 +29,6 @@ using terms from application "Messages"
 				set theFile to "/tmp/securityspy_imessage_file_" & CameraLoop & ".jpg"
 				try
 					tell application "SecuritySpy" to capture image as theFile camera name CameraLoop with overwrite
-					delay 0.1
 					set the end of theResponse to POSIX file theFile
 				on error
 					-- This may happen if the camera is diconnected. SecuritySpy throws an error.
@@ -42,7 +41,6 @@ using terms from application "Messages"
 		else
 			set theFile to "/tmp/securityspy_imessage_file_" & getCamera & ".jpg"
 			tell application "SecuritySpy" to capture image as theFile camera name getCamera with overwrite
-			delay 0.1
 			set theResponse to {POSIX file theFile}
 		end if
 		return theResponse
@@ -77,7 +75,7 @@ using terms from application "Messages"
 					make new property list item at end of property list items of contents of plistfile with properties {kind:list, name:"Subscribers"}
 				end tell
 			end try
-			delay 0.5
+			delay 0.2
 		end if
 		
 		tell application "SecuritySpy" to set allCams to (get camera names)
@@ -645,13 +643,15 @@ using terms from application "Messages"
 		-- Send our response. One message at a time. This works with an array or text string.
 		if class of theResponse is list then
 			repeat with response in theResponse
+				delay 0.2
 				send response to theChat
+				delay 0.2
 			end repeat
 		else
 			send theResponse to theChat
 		end if
+		delay 3
 		close windows
-		return
 	end message received
 	
 	-- When first message is received, accept the invitation.
@@ -666,12 +666,6 @@ using terms from application "Messages"
 	on received video invitation theText from theBuddy for theChat
 		decline theChat
 	end received video invitation
-	on received remote screen sharing invitation from theBuddy for theChat
-		decline theChat
-	end received remote screen sharing invitation
-	on received local screen sharing invitation from theBuddy for theChat
-		decline theChat
-	end received local screen sharing invitation
 	on received file transfer invitation theFileTransfer
 		decline theFileTransfer
 	end received file transfer invitation

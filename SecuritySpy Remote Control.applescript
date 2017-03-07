@@ -446,6 +446,12 @@ using terms from application "Messages"
 				set theResponse to DisplayBrightness(0)
 			end if
 			
+		else if theCommand is "power" and thisHandleIsAdmin is true then
+			-- This provides power/battery and runtime information 
+			do shell script "pmset -g everything | grep Cycles"
+			set powerstatus to the result
+			set theResponse to "Power Status:" & powerstatus
+			
 		else if theCommand is "admins" and thisHandleIsAdmin is true then
 			set theResponse to "Current admins:" & return
 			repeat with loopAdmin in allAdmins
@@ -648,6 +654,7 @@ using terms from application "Messages"
 				set theResponse to theResponse & "reset <really> - Delete the plist files to reset this system." & return
 				-- This probably only works on a MacBooks.
 				set theResponse to theResponse & "screen <on|off> - Sets host's screen brightness. May or may not not work for you." & return
+				set theResponse to theResponse & "power - Displays information about the current state of battery power on the system." & return
 			end if
 		end if
 		

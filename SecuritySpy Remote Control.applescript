@@ -645,7 +645,7 @@ using terms from application "Messages"
 				set theResponse to theResponse & "admins - Lists all administrator handles." & return
 				set theResponse to theResponse & "admin <handle> - Makes <handle> an admin." & return
 				set theResponse to theResponse & "unadmin <handle> - Take away admin from <handle>" & return
-				set theResponse to theResponse & "reset <really> - Delete the plist files to reset this system."
+				set theResponse to theResponse & "reset <really> - Delete the plist files to reset this system." & return
 				-- This probably only works on a MacBooks.
 				set theResponse to theResponse & "screen <on|off> - Sets host's screen brightness. May or may not not work for you." & return
 			end if

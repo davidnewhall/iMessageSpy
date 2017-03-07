@@ -39,13 +39,21 @@ using terms from application "Messages"
 			set theResponse to "Camera not found: " & getCamera & return
 			set theResponse to theResponse & "Use \"cams\" to see the camera names. Send \"pics\" to see a picture from each camera."
 		else
+			set getCamera to my CorrectCase(getCamera, CameraNames)
 			set theFile to "/tmp/securityspy_imessage_file_" & getCamera & ".jpg"
 			tell application "SecuritySpy" to capture image as theFile camera name getCamera with overwrite
 			set theResponse to {POSIX file theFile}
 		end if
 		return theResponse
 	end getPicsFromSS
-	
+
+	on CorrectCase(this_item, this_list)
+		repeat with i from 1 to the count of this_list
+			if item i of this_list is this_item then return item i of this_list
+		end repeat
+		return this_item
+	end CorrectCase
+
 	-- brightness should be between 0 and 1.
 	on DisplayBrightness(brightness)
 		tell application "System Preferences"
@@ -64,7 +72,7 @@ using terms from application "Messages"
 		global plistFilePath
 		-- The code in this if-statements creates the initial, empty property list file.
 		-- The code that follows re-writes the file with real data. All of this took a really long time to figure out.
-		if not (exists file plistFilePath of application "Finder") then
+		if not (exists file plistFilePath of application "System Events") then
 			try
 				-- This next line is a stupid hack required on Yosemite.
 				do shell script "defaults write " & (POSIX path of plistFilePath) & " Subscribers -boolean true"
@@ -103,13 +111,7 @@ using terms from application "Messages"
 									-- Don't do anything, just append the data and save it without changes.
 									set newSubList's end to allSubs's item i
 								else
-									repeat with theCam in allCams
-										if theCam as string is equal to subCam as string then
-											-- This loop is used to correct the case of the camera name.
-											set subCam to theCam
-										end if
-									end repeat
-									
+									set subCam to {my CorrectCase(subCam, allCams)}
 									-- Add new camera to previous subscriber.
 									set newCams to (cameras of loopSub & subCam)
 									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:subName, startat:current date, cameras:newCams}
@@ -128,12 +130,7 @@ using terms from application "Messages"
 								set partialResponse to "all " & (count allCams) & " cameras."
 							else
 								set partialResponse to "your first camera."
-								repeat with theCam in allCams
-									if theCam as string is equal to subCam as string then
-										-- This loop is used to correct the case of the camera name.
-										set subCam to {theCam}
-									end if
-								end repeat
+								set subCam to {my CorrectCase(subCam, allCams)}
 							end if
 							set newSubList's end to {handle:subHandle, admin:false, ignored:false, contact:subName, startat:current date, cameras:subCam}
 							set theResponse to "You have been successfully subscribed to " & partialResponse
@@ -145,12 +142,7 @@ using terms from application "Messages"
 						if subCam is "*" then
 							set subCam to allCams
 						else
-							repeat with theCam in allCams
-								if theCam as string is equal to subCam as string then
-									-- This loop is used to correct the case of the camera name.
-									set subCam to {theCam}
-								end if
-							end repeat
+							set subCam to {my CorrectCase(subCam, allCams)}
 						end if
 						-- This is what actually re-writes the plist file for the first time and creates real data.
 						set value of property list item "Subscribers" to (previousValue & {{handle:subHandle, admin:true, ignored:false, contact:subName, startat:current date, cameras:subCam}})
@@ -164,7 +156,7 @@ using terms from application "Messages"
 	
 	on unSubscribeCam(subCam, subHandle)
 		global plistFilePath
-		if not (exists file plistFilePath of application "Finder") then
+		if not (exists file plistFilePath of application "System Events") then
 			return "There are no subscribers, including you."
 		end if
 		tell application "System Events"
@@ -186,7 +178,11 @@ using terms from application "Messages"
 								else if subCam is in cameras of loopSub then
 									set newCams to {}
 									repeat with loopCam in (cameras of loopSub)
-										if subCam as string is not equal to loopCam as string then set the end of newCams to loopCam
+										if subCam as string is not equal to loopCam as string then
+											set the end of newCams to loopCam
+										else
+											set subCam to loopCam -- fixes case for reply message.
+										end if
 									end repeat
 									set newSubList's end to {handle:subHandle, admin:admin of loopSub, ignored:ignored of loopSub, contact:contact of loopSub, startat:current date, cameras:newCams}
 									set theResponse to "You have been successfully ubsubscribed from " & subCam & return & "You are now subscribed to " & (count newCams) & " cameras."
@@ -281,7 +277,7 @@ using terms from application "Messages"
 	on stopNotices(Mins, subHandle)
 		global plistFilePath
 		set startTime to (current date) + (Mins * minutes)
-		if not (exists file plistFilePath of application "Finder") then
+		if not (exists file plistFilePath of application "System Events") then
 			return "There are no subscribers, including you. You should not be receiving notices."
 		end if
 		tell application "System Events"
@@ -322,35 +318,35 @@ using terms from application "Messages"
 		return theResponse
 	end stopNotices
 	
-	on getAdmins()
-		global plistFilePath
-		if not (exists file plistFilePath of application "Finder") then return {}
+	on getAdmins(plistFilePath)
 		set Admins to {}
-		tell application "System Events"
-			tell property list file plistFilePath
-				tell contents
-					if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return
-					set allSubs to value of every property list item of property list item "Subscribers" as list
-					repeat with i from 1 to count allSubs
-						set loopSub to (item i of allSubs)
-						if (admin of loopSub is true) then
-							set Admins to Admins & {handle of loopSub}
-						end if
-					end repeat
+		try
+			tell application "System Events"
+				tell property list file plistFilePath
+					tell contents
+						if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return Admins
+						set allSubs to value of every property list item of property list item "Subscribers" as list
+						repeat with i from 1 to count allSubs
+							set loopSub to (item i of allSubs)
+							if (admin of loopSub is true) then
+								set Admins to Admins & {handle of loopSub}
+							end if
+						end repeat
+					end tell
 				end tell
 			end tell
-		end tell
+		end try
 		return Admins
 	end getAdmins
 	
 	on getAllSubs(returnFullRecord)
 		global plistFilePath
-		if not (exists file plistFilePath of application "Finder") then return {}
 		set Subscribers to {}
+		if not (exists file plistFilePath of application "System Events") then return Subscribers
 		tell application "System Events"
 			tell property list file plistFilePath
 				tell contents
-					if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return
+					if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return Subscribers
 					set allSubs to value of every property list item of property list item "Subscribers" as list
 					repeat with i from 1 to count allSubs
 						set loopSub to (item i of allSubs)
@@ -366,24 +362,24 @@ using terms from application "Messages"
 		return Subscribers
 	end getAllSubs
 	
-	on getIgnores()
-		global plistFilePath
-		if not (exists file plistFilePath of application "Finder") then return {}
+	on getIgnores(plistFilePath)
 		set Ignores to {}
-		tell application "System Events"
-			tell property list file plistFilePath
-				tell contents
-					if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return
-					set allSubs to value of every property list item of property list item "Subscribers" as list
-					repeat with i from 1 to count allSubs
-						set loopSub to (item i of allSubs)
-						if (ignored of loopSub is true) then
-							set Ignores to Ignores & {handle of loopSub}
-						end if
-					end repeat
+		try
+			tell application "System Events"
+				tell property list file plistFilePath
+					tell contents
+						if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return Ignores
+						set allSubs to value of every property list item of property list item "Subscribers" as list
+						repeat with i from 1 to count allSubs
+							set loopSub to (item i of allSubs)
+							if (ignored of loopSub is true) then
+								set Ignores to Ignores & {handle of loopSub}
+							end if
+						end repeat
+					end tell
 				end tell
 			end tell
-		end tell
+		end try
 		return Ignores
 	end getIgnores
 	
@@ -392,12 +388,17 @@ using terms from application "Messages"
 		set theHandle to handle of theBuddy
 		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.SSHelper.plist"
 		-- It's unfotunate the plist is looped twice, once for each of these calls. Will be nice to reduce it to one call..
-		if theHandle is in getIgnores() then return
-		set allAdmins to getAdmins()
-		if theHandle is in allAdmins then
+		if not (exists file plistFilePath of application "System Events") then
 			set thisHandleIsAdmin to true
+			set allAdmins to {}
 		else
-			set thisHandleIsAdmin to false
+			if theHandle is in getIgnores(plistFilePath) then return
+			set allAdmins to getAdmins(plistFilePath)
+			if theHandle is in allAdmins then
+				set thisHandleIsAdmin to true
+			else
+				set thisHandleIsAdmin to false
+			end if
 		end if
 		--Initialize an empty response.
 		set theResponse to {}
@@ -614,6 +615,15 @@ using terms from application "Messages"
 					set theResponse to "Usage: pas <camera|*>" & return & "The camera name you provided does not exist. Use the command \"cams\" to see which cameras you can control. Sending \"pas *\" will set all cameras to passive."
 				end if
 			end tell
+		else if theCommand is "reset" then
+			if theArgument is not "really" then
+				set theResponse to "You must send reset with the word really after to really reset the system plist."
+			else
+				-- Delete the sandboxed file in case we're running out of the sandbox.
+				do shell script "rm -f ~/Library/Containers/com.apple.iChat/Library/Preferences/com.cartcrafter.SSHelper.plist"
+				do shell script "rm -f ~/Library/Preferences/com.cartcrafter.SSHelper.plist"
+				set theResponse to "System reset. You should now subscribe to a camera to become an admin."
+			end if
 			
 		else if theCommand is "help" then
 			set theResponse to " - SecuritySpy Remote Control Help - " & return
@@ -635,6 +645,7 @@ using terms from application "Messages"
 				set theResponse to theResponse & "admins - Lists all administrator handles." & return
 				set theResponse to theResponse & "admin <handle> - Makes <handle> an admin." & return
 				set theResponse to theResponse & "unadmin <handle> - Take away admin from <handle>" & return
+				set theResponse to theResponse & "reset <really> - Delete the plist files to reset this system." & return
 				-- This probably only works on a MacBooks.
 				set theResponse to theResponse & "screen <on|off> - Sets host's screen brightness. May or may not not work for you." & return
 			end if

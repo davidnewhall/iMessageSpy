@@ -54,20 +54,6 @@ using terms from application "Messages"
 		return this_item
 	end CorrectCase
 	
-	-- brightness should be between 0 and 1.
-	on DisplayBrightness(brightness)
-		tell application "System Preferences"
-			activate
-			reveal anchor "displaysDisplayTab" of pane id "com.apple.preference.displays"
-			tell application "System Events"
-				delay 0.3
-				set value of slider 1 of group 1 of tab group 1 of window 1 of process "System Preferences" to brightness
-			end tell
-			quit
-		end tell
-		return {"Displayed brightness set to " & (round (brightness * 100)) & "%"}
-	end DisplayBrightness
-	
 	on SubscribeCam(subCam, subName, subHandle)
 		global plistFilePath
 		-- The code in this if-statements creates the initial, empty property list file.
@@ -479,16 +465,7 @@ using terms from application "Messages"
 					set theResponse to theResponse & (i & ": " & loopCam & " (" & camMode & ")" & return) as string
 				end repeat
 			end tell
-		else if theCommand is "screen" and thisHandleIsAdmin is true then
-			-- Turn the display on or off (by adjusting the brightness).
-			-- This probably only works on a MacBook pro as your SecuritySpy server.
-			if (theArgument is not "on" and theArgument is not "off") then
-				set theResponse to "Usage: screen [on|off]"
-			else if theArgument is "on" then
-				set theResponse to DisplayBrightness(0.8)
-			else
-				set theResponse to DisplayBrightness(0)
-			end if
+			
 			
 		else if theCommand is "admins" and thisHandleIsAdmin is true then
 			set theResponse to "Current admins:" & return
@@ -696,7 +673,20 @@ using terms from application "Messages"
 				set theResponse to theResponse & "unadmin <handle> - Take away admin from <handle>" & return
 				set theResponse to theResponse & "reset <really> - Delete the plist files to reset this system." & return
 				-- This probably only works on a MacBooks.
-				set theResponse to theResponse & "screen <on|off> - Sets host's screen brightness. May or may not not work for you." & return
+			end if
+			-- Load any available plugins and display their help info.
+			tell application "Finder" to set myPath to container of (path to me) as text
+			set pluginFiles to (list folder (myPath & "SecuritySpy_Plugins:") without invisibles)
+			if (count of pluginFiles) is greater than 0 then
+				set theResponse to theResponse & "Available Plugin Commands:" & return
+				repeat with loopPlugin in pluginFiles
+					set pluginPath to myPath & "SecuritySpy_Plugins:" & loopPlugin
+					try
+						set DynoPlugin to load script file (pluginPath)
+						set theCmd to text 1 thru -6 of loopPlugin
+						set theResponse to theResponse & DynoPlugin's HelpLine(theCmd, thisHandleIsAdmin) & return
+					end try
+				end repeat
 			end if
 		else
 			-- Check for dynamic plugin. This allows you to extend the command set here.
@@ -704,9 +694,20 @@ using terms from application "Messages"
 			set pluginPath to myPath & "SecuritySpy_Plugins:" & theCommand & ".scpt"
 			if (exists file pluginPath of application "System Events") then
 				if thisHandleIsAdmin then set theResponse to "Found plugin at " & pluginPath
+				set pluginCmd to ""
+				set pluginArgs to ""
+				set astid to AppleScript's text item delimiters
+				try
+					set AppleScript's text item delimiters to {" "}
+					if theArgument is not "" then
+						set pluginCmd to (the first text item of theArgument as string)
+					end if
+					set pluginArgs to (text items 2 thru -1 of theArgument as string)
+				end try
+				set AppleScript's text item delimiters to astid
 				try
 					set DynoPlugin to load script file (pluginPath)
-					set theResponse to DynoPlugin's MainRoutine(theHandle, theArgument, thisHandleIsAdmin)
+					set theResponse to DynoPlugin's MainRoutine(theCommand, theHandle, pluginCmd, pluginArgs, thisHandleIsAdmin)
 				on error
 					if thisHandleIsAdmin then set theResponse to "Error with plugin: " & pluginPath
 				end try

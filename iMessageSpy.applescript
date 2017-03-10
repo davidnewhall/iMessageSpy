@@ -1,13 +1,11 @@
 (* ***************************************************
 **   --== iMessageSpy ==--
-** File: SecuritySpy Remote Control.applescript
+** File: iMessageSpy.applescript
 ** This script is designed to be used with Messages.app
 ** and SecuritySpy.app. There is another script that must
 ** be used as an Action for your cameras in SecuritySpy.
 ** Copy this script to:
 ** ~/Library/Application Scripts/com.apple.iChat/
-** Copy the other script to:
-** ~/Documents/SecuritySpy/Scripts/
 ** Set your AppleScript handler in Messages.app to this script.
 ** (hint: it's in the app's General Preferences)
 ** Send "help" or "pics" via iMessage. This only works with
@@ -21,6 +19,7 @@ using terms from application "Messages"
 	on getPicsFromSS(getCamera)
 		tell application "SecuritySpy" to set CameraNames to (get camera names)
 		if getCamera is "" then
+			-- Getting pictures from all cameras.
 			set theResponse to {}
 			set i to 0
 			set camCount to count CameraNames
@@ -39,10 +38,16 @@ using terms from application "Messages"
 			set theResponse to "Camera not found: " & getCamera & return
 			set theResponse to theResponse & "Use \"cams\" to see the camera names. Send \"pics\" to see a picture from each camera."
 		else
+			-- Just getting a picture from one camera.
 			set getCamera to my CorrectCase(getCamera, CameraNames)
 			set theFile to "/tmp/securityspy_imessage_file_" & getCamera & ".jpg"
-			tell application "SecuritySpy" to capture image as theFile camera name getCamera with overwrite
-			set theResponse to {POSIX file theFile}
+			try
+				tell application "SecuritySpy" to capture image as theFile camera name getCamera with overwrite
+				set theResponse to POSIX file theFile
+			on error
+				-- This may happen if the camera is diconnected. SecuritySpy throws an error.
+				set the end of theResponse to "Error with camera " & getCamera
+			end try
 		end if
 		return theResponse
 	end getPicsFromSS
@@ -136,7 +141,7 @@ using terms from application "Messages"
 						if subCam is "*" then
 							set subCam to allCams
 						else
-							set subCam to my CorrectCase(subCam, allCams)
+							set subCam to my {CorrectCase(subCam, allCams)}
 						end if
 						set subCam to my MakeCamList(subCam)
 						-- This is what actually re-writes the plist file for the first time and creates real data.
@@ -416,7 +421,7 @@ using terms from application "Messages"
 	on message received theMessage from theBuddy for theChat
 		global plistFilePath
 		set theHandle to handle of theBuddy
-		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.SSHelper.plist"
+		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.iMessageSpy.plist"
 		-- It's unfotunate the plist is looped twice, once for each of these calls. Will be nice to reduce it to one call..
 		if not (exists file plistFilePath of application "System Events") then
 			set thisHandleIsAdmin to true
@@ -575,7 +580,7 @@ using terms from application "Messages"
 						if (count loopCams) is 0 then
 							set theResponse to theResponse & "no cams"
 						else if (count loopCams) is 1 then
-							set theResponse to theResponse & "cam: " & item 1 of loopCams
+							set theResponse to theResponse & "cam: " & camName of item 1 of loopCams
 						else
 							set theResponse to theResponse & "cams: "
 							set i to 0
@@ -647,13 +652,16 @@ using terms from application "Messages"
 				set theResponse to "You must send reset with the word really after to really reset the system plist."
 			else
 				-- Delete the sandboxed file in case we're running out of the sandbox.
+				do shell script "rm -f ~/Library/Containers/com.apple.iChat/Library/Preferences/com.cartcrafter.iMessageSpy.plist"
+				do shell script "rm -f ~/Library/Preferences/com.cartcrafter.iMessageSpy.plist"
+				-- Delete the old files too. It was renamed on Mar 10, 2017.
 				do shell script "rm -f ~/Library/Containers/com.apple.iChat/Library/Preferences/com.cartcrafter.SSHelper.plist"
 				do shell script "rm -f ~/Library/Preferences/com.cartcrafter.SSHelper.plist"
 				set theResponse to "System reset. You should now subscribe to a camera to become an admin."
 			end if
 			
 		else if theCommand is "help" then
-			set theResponse to " - SecuritySpy Remote Control Help - " & return
+			set theResponse to " - iMessageSpy Help - " & return
 			set theResponse to theResponse & "Available User Commands:" & return
 			set theResponse to theResponse & "cams - Displays all available cameras by name." & return
 			set theResponse to theResponse & "pics [camera] - Sends pictures from all cameras, or from [camera]." & return
@@ -676,11 +684,11 @@ using terms from application "Messages"
 			end if
 			-- Load any available plugins and display their help info.
 			tell application "Finder" to set myPath to container of (path to me) as text
-			set pluginFiles to (list folder (myPath & "SecuritySpy_Plugins:") without invisibles)
+			set pluginFiles to (list folder (myPath & "iMessageSpy_Plugins:") without invisibles)
 			if (count of pluginFiles) is greater than 0 then
 				set theResponse to theResponse & "Available Plugin Commands:" & return
 				repeat with loopPlugin in pluginFiles
-					set pluginPath to myPath & "SecuritySpy_Plugins:" & loopPlugin
+					set pluginPath to myPath & "iMessageSpy_Plugins:" & loopPlugin
 					try
 						set DynoPlugin to load script file (pluginPath)
 						set theCmd to text 1 thru -6 of loopPlugin
@@ -691,7 +699,7 @@ using terms from application "Messages"
 		else if theCommand does not contain ":" then -- Best security we got, right here.
 			-- Check for dynamic plugin. This allows you to extend the command set here.
 			tell application "Finder" to set myPath to container of (path to me) as text
-			set pluginPath to myPath & "SecuritySpy_Plugins:" & theCommand & ".scpt"
+			set pluginPath to myPath & "iMessageSpy_Plugins:" & theCommand & ".scpt"
 			if (exists file pluginPath of application "System Events") then
 				if thisHandleIsAdmin then set theResponse to "Found plugin at " & pluginPath
 				set pluginCmd to ""

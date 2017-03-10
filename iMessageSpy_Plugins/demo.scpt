@@ -1,5 +1,5 @@
 -- This is a sample plugin file. It must be compiled as a script (.scpt) and placed @
--- /Users/cartcrafter/Library/Application Scripts/com.apple.iChat/SecuritySpy_Plugins
+-- ~/Library/Application Scripts/com.apple.iChat/iMessageSpy_Plugins
 
 on MainRoutine(pName, theHandle, theCmd, theArgs, isAdmin)
 	set Reply to theHandle & " -> Hello! You can create a plugin like this."

@@ -1,5 +1,5 @@
 -- This is a sample plugin file. It must be compiled as a script (.scpt) and placed @
--- /Users/cartcrafter/Library/Application Scripts/com.apple.iChat/SecuritySpy_Plugins
+-- ~/Library/Application Scripts/com.apple.iChat/iMessageSpy_Plugins
 -- This probably only works on a MacBook (Pro/Air/Etc) as your SecuritySpy server.
 
 on MainRoutine(pName, theHandle, theCmd, theArgs, isAdmin)

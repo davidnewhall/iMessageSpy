@@ -6,12 +6,10 @@
 ** your Messages.app AppleScript handler.
 ** Copy this script to:
 ** ~/Documents/SecuritySpy/Scripts/
-** Copy the other script to:
-** ~/Library/Application Scripts/com.apple.iChat/
 ** Set your camera's Actions to run this script.
 ** (hint: it's in the SecuritySpy's camera settings under Actions)
 ** This script will do nothing by itself. You must subscribe to
-** your cameras using the SecuritySpy Remote Control script.
+** your cameras using the iMessageSpy (Messages.app) script.
 ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** ** **
 ** Download the latest files at:
 ** https://github.com/davidnewhall/iMessageSpy
@@ -27,9 +25,9 @@ on run arg
 	set sendCameraName to true
 	
 	-- Once Messages.app gets sanboxed, this is the new location of the plist file we create. Luckily, SecuritySpy is not sandboxed (yet).
-	set plistFilePath to (path to home folder as text) & "Library:Containers:com.apple.iChat:Data:Library:Preferences:com.cartcrafter.SSHelper.plist"
+	set plistFilePath to (path to home folder as text) & "Library:Containers:com.apple.iChat:Data:Library:Preferences:com.cartcrafter.iMessageSpy.plist"
 	if not (exists file plistFilePath of application "Finder") then
-		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.SSHelper.plist"
+		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.iMessageSpy.plist"
 		if not (exists file plistFilePath of application "Finder") then
 			return
 		end if

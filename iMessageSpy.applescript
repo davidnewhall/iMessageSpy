@@ -628,7 +628,7 @@ using terms from application "Messages"
 					active mode camera name theArgument
 					set theResponse to "Camera " & theArgument & " is now ACTIVE."
 				else
-					set theReponse to "Usage: act <camera|*>" & return & "The camera name you provided does not exist. Use the command \"cams\" to see which cameras you can control. Sending \"act *\" will set all cameras to active."
+					set theResponse to "Usage: act <camera|*>" & return & "The camera name you provided does not exist. Use the command \"cams\" to see which cameras you can control. Sending \"act *\" will set all cameras to active."
 				end if
 			end tell
 			

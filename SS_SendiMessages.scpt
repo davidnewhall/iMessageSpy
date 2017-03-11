@@ -32,41 +32,40 @@ on run arg
 	if not (exists file plistFilePath of application "Finder") then
 		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.iMessageSpy.plist"
 		if not (exists file plistFilePath of application "Finder") then
-			return
+			return -- no plist file exists.
 		end if
 	end if
-	
-	tell application "System Events"
-		tell property list file plistFilePath
-			tell contents
-				-- This next line checks if any handles exist in the file. It can happen if everyone unsubscribes, after at least 1 person subscribed.
-				if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return
-				set ImageFile to "" -- Used lated to save our image file, should we need to capture one.
-				-- AppleScript makes creating arrays so easy.
-				set allSubs to value of every property list item of property list item "Subscribers" as list
-				-- Loop thru each subscriber and check if they subscribe to this camera.
-				-- This pulls an array (of subscriber data) out of the larger array.
-				repeat with loopSub in allSubs
-					if (ignored of loopSub is false) then -- They're ignored, go to next subscriber.
-						-- Check each camera. This data structure needs to be changed to be better.
-						repeat with loopCam in cameras of loopSub
-							if (camName is camName of loopCam) then -- they have a subscription
-								if (startat of loopCam < (current date)) then -- it's not stopped.
-									-- The handle is the actual iMessage name. A phone number or email address in most cases.
-									if ImageFile is equal to "" then set ImageFile to my saveImage(camName)
-									my sendImage(handle of loopSub, ImageFile, camName)
-								end if
-							end if
-						end repeat
-					end if
-				end repeat
-			end tell
-		end tell
+	tell application "System Events" to tell property list file plistFilePath to tell contents
+		-- This next line checks if any handles exist in the file. If none, everyone unsubscribed.
+		if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return
+		-- Load the plist data into an array.
+		set allSubs to value of every property list item of property list item "Subscribers" as list
 	end tell
+	my notifySubscribers(camName, allSubs)
 	try -- Just in case Messages is "not running"
 		tell application "Messages" to close windows
 	end try
 end run
+
+on notifySubscribers(camName, allSubs)
+	set ImageFile to "" -- Used lated to save our image file, should we need to capture one.
+	-- Loop thru each subscriber and check if they subscribe to this camera.
+	-- This pulls an array (of subscriber data) out of the larger array.
+	repeat with loopSub in allSubs
+		if (ignored of loopSub is false) then -- They're ignored, go to next subscriber.
+			-- Check each camera. This data structure needs to be changed to be better.
+			repeat with loopCam in cameras of loopSub
+				if (camName is camName of loopCam) then -- they have a subscription
+					if (startat of loopCam < (current date)) then -- it's not stopped.
+						if ImageFile is equal to "" then set ImageFile to my saveImage(camName)
+						-- The handle is the actual iMessage name. A phone number or email address in most cases.
+						my sendImage(handle of loopSub, ImageFile, camName)
+					end if
+				end if
+			end repeat
+		end if
+	end repeat
+end notifySubscribers
 
 on saveImage(camName)
 	-- This will overwrite the file every time.

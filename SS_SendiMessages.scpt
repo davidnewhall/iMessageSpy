@@ -15,16 +15,19 @@
 ** https://github.com/davidnewhall/iMessageSpy
 *************************************************** *)
 
--- You can use something like the below to test this in Script Editor
--- set arg to {0, "Porch"}
+-- Set this to false if you do not want the text "Motion Detected! Camera ..." with your images. I always set to false.
+property SendCameraName : true
+-- This delay will help prevent duplicate images. If you tend to get duplicate images, increase the delay. 0.7 should be your max.
+property ImageDelay : 0.1
+
+-- Change Porch to a real camera name to test this in Script Editor
+property testCam : "Porch"
 
 on run arg
-	-- This delay will help prevent duplicate images. If you tend to get duplicate images, increase the delay. 0.7 should be your max.
-	set imageDelay to 0.1
-	-- Set this to false if you do not want the text "Motion Detected! Camera ..." with your images. I always set to false.
-	set sendCameraName to true
-	
-	-- Once Messages.app gets sanboxed, this is the new location of the plist file we create. Luckily, SecuritySpy is not sandboxed (yet).
+	if (count of arg) is not 2 then set arg to {0, testCam}
+	set camName to item 2 of arg -- item 1 is the cam number.
+	-- Once Messages.app gets sanboxed, this is the new location of the plist file we create.
+	-- Luckily, SecuritySpy is not sandboxed (yet).
 	set plistFilePath to (path to home folder as text) & "Library:Containers:com.apple.iChat:Data:Library:Preferences:com.cartcrafter.iMessageSpy.plist"
 	if not (exists file plistFilePath of application "Finder") then
 		set plistFilePath to (path to home folder as text) & "Library:Preferences:com.cartcrafter.iMessageSpy.plist"
@@ -32,49 +35,57 @@ on run arg
 			return
 		end if
 	end if
-	set camName to item 2 of arg
-	set Subscribers to {}
+	
 	tell application "System Events"
 		tell property list file plistFilePath
 			tell contents
 				-- This next line checks if any handles exist in the file. It can happen if everyone unsubscribes, after at least 1 person subscribed.
 				if not (exists property list item "handle" of every property list item of property list item "Subscribers") then return
+				set ImageFile to "" -- Used lated to save our image file, should we need to capture one.
 				-- AppleScript makes creating arrays so easy.
 				set allSubs to value of every property list item of property list item "Subscribers" as list
 				-- Loop thru each subscriber and check if they subscribe to this camera.
-				repeat with i from 1 to count allSubs
-					-- This pulls an array (of subscriber data) out of the larger array.
-					set loopSub to (item i of allSubs)
-					-- Do they subscribe to this camera? Are they ignored? Is there a stop timer in place? yes, no, no, go
-					repeat with loopCam in cameras of loopSub
-						if (camName is camName of loopCam) and (ignored of loopSub is false) and (startat of loopCam < (current date)) then
-							-- The handle is the actual iMessage name. A phone number or email address in most cases.
-							set Subscribers to Subscribers & {handle of loopSub}
-						end if
-					end repeat
+				-- This pulls an array (of subscriber data) out of the larger array.
+				repeat with loopSub in allSubs
+					if (ignored of loopSub is false) then -- They're ignored, go to next subscriber.
+						-- Check each camera. This data structure needs to be changed to be better.
+						repeat with loopCam in cameras of loopSub
+							if (camName is camName of loopCam) then -- they have a subscription
+								if (startat of loopCam < (current date)) then -- it's not stopped.
+									-- The handle is the actual iMessage name. A phone number or email address in most cases.
+									if ImageFile is equal to "" then set ImageFile to my saveImage(camName)
+									my sendImage(handle of loopSub, ImageFile, camName)
+								end if
+							end if
+						end repeat
+					end if
 				end repeat
 			end tell
 		end tell
 	end tell
-	if (count Subscribers) is 0 then return
-	
+	try -- Just in case Messages is "not running"
+		tell application "Messages" to close windows
+	end try
+end run
+
+on saveImage(camName)
 	-- This will overwrite the file every time.
 	set theFile to "/tmp/securityspy_imessage_file_" & camName & ".jpg"
 	tell application "SecuritySpy" to capture image as theFile camera name camName with overwrite
-	delay imageDelay
+	delay ImageDelay
 	-- This changes the variable into something iMessage can use.
-	set theFile to (POSIX file theFile)
-	-- This is the Subscribers array we built previously.
-	repeat with Subscriber in Subscribers
+	return (POSIX file theFile)
+end saveImage
+
+on sendImage(Subscriber, ImageFile, camName)
+	try -- Just in case Messages is "not running"
 		tell application "Messages"
 			-- Best trick to send an iMessage that I've come across. Seems to work every time. More tips are welcomed.
-			set targetBuddy to buddy Subscriber of (1st service whose service type = iMessage)
-			if sendCameraName is true then
-				send "Motion Detected! Camera " & camName & ". Reply \"stop\" to stop messages for 10 minues." to targetBuddy
+			send ImageFile to buddy Subscriber of (1st service whose service type = iMessage)
+			if SendCameraName is true then
 				delay 0.1
+				send "Motion Detected! Camera " & camName & ". Reply \"stop\" to stop and \"help\" for other options." to buddy Subscriber of (1st service whose service type = iMessage)
 			end if
-			send theFile to targetBuddy
 		end tell
-	end repeat
-	tell application "Messages" to close windows
-end run
+	end try -- What can securityspy do with an error? need a 'log' command to fire an event log entry.
+end sendImage

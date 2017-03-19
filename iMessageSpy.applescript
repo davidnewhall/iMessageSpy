@@ -128,7 +128,7 @@ using terms from application "Messages"
 								set partialResponse to "all " & (count allCams) & " cameras."
 							else
 								set partialResponse to "your first camera."
-								set subCam to my CorrectCase(subCam, allCams)
+								set subCam to my {CorrectCase(subCam, allCams)}
 							end if
 							set subCam to my MakeCamList(subCam)
 							set newSubList's end to {handle:subHandle, admin:false, ignored:false, contact:subName, cameras:subCam}

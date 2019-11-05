@@ -1,6 +1,9 @@
 # iMessageSpy
 SecuritySpy - Messages.app and iMessage Integration
 
+### UH OH - Nov 4, 2019
+I'm no longer maintaining this application. Apple removed imessage handler support from Messages.app in macOS 10.13, rendering this suite of scripts useless. I've since found another way to handle incoming imessages, but not using applescript. I am now (slowly) working on a new Golang application called [motifini](https://github.com/davidnewhall/motifini). It support macOS 10.12, 10.13 and probably even 10.14. 
+
 ### Description
 I've created two scripts that allow you to interact with and control part of SecuritySpy using iMessages and the Messages.app. I've tested this on 10.11 and 10.12, but it may work on older versions of Mac OS X. 
 
